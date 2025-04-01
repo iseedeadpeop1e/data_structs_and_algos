@@ -20,12 +20,40 @@ class HashTable {
             table = new list<pair<size_t, ValueType>>[hashGroups];
         }
 
+        // конструктор копирования
+        HashTable(const HashTable& other) : hashGroups(other.hashGroups), itemsCount(other.itemsCount) {
+            table = new list<pair<size_t, ValueType>>[hashGroups]; 
+            for (size_t i = 0; i < hashGroups; ++i) {
+                table[i] = other.table[i]; 
+            }
+        }
+
         ~HashTable() {
             for (size_t i = 0; i < hashGroups; ++i) {
                 table[i].clear();
             }
 
             delete[] table;
+        }
+        
+        // присваивание
+        HashTable& operator=(const HashTable& other) {
+            if (this != &other) { 
+                
+                //очиста предыдущих данных 
+                for (size_t i = 0; i < hashGroups; ++i) {
+                    table[i].clear();
+                }
+                delete[] table;
+        
+                hashGroups = other.hashGroups;
+                itemsCount = other.itemsCount;
+                table = new list<pair<size_t, ValueType>>[hashGroups];
+                for (size_t i = 0; i < hashGroups; ++i) {
+                    table[i] = other.table[i];
+                }
+            }
+            return *this; 
         }
 
         bool isEmpty() const {
