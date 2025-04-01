@@ -1,11 +1,12 @@
 #include "hashtable.h"
 #include <iostream>
+#include <string>
 
 using namespace std;
 
 
 int main() {
-    HashTable hashTable;
+    HashTable<string> hashTable(10);
 
     if (hashTable.isEmpty()) {
         cout << "CORRECT.\n";
@@ -32,4 +33,17 @@ int main() {
     else {
         cout << "CORRECT.\n";
     }
+
+    cout << "Ivan: " << hashTable.searchTable(415) << "\n"; 
+    cout << "Gena: " << hashTable.searchTable(417) << "\n"; 
+    try {
+        cout << "Margarita: " << hashTable.searchTable(99999) << "\n";
+    }
+    catch (const char* error_message) {
+        cout << error_message << "\n";
+    }
+
+    for (const auto& pair : hashTable) {
+        cout << pair.first << " " << pair.second << "\n";
+    } 
 }

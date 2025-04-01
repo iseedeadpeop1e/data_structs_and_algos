@@ -7,109 +7,194 @@
 
 using namespace std;
 
-class HashTable
-{  
+template <typename ValueType>
+class HashTable {  
     private:
-        static const int hashGroups = 10;
-        list<pair<int, string>> table [hashGroups];
+        size_t hashGroups;
+        size_t itemsCount;
+        list<pair<size_t, ValueType>> *table = nullptr;
     
     public:
-        bool isEmpty() const;
-        int hashFunction(int key);
-        void insertItem(int key, string value);
-        void removeItem(int key);
-        string searchTable(int key) const;
-        void printTable() const;
+
+        HashTable(size_t hashGroups) : hashGroups(hashGroups) {
+            table = new list<pair<size_t, ValueType>>[hashGroups];
+        }
+
+        ~HashTable() {
+            for (size_t i = 0; i < hashGroups; ++i) {
+                table[i].clear();
+            }
+
+            delete[] table;
+        }
+
+        bool isEmpty() const {
+            int sum{};
+            for (int i{}; i < hashGroups; i++) {
+                sum += table[i].size();
+            }
+
+            if (!sum) {
+                return true;
+            }
+            return false;
+        }
+
+        size_t getItemsCount() const {
+            return itemsCount;
+        }
+
+        int hashFunction(size_t key) const {
+            return key % hashGroups;
+        }
+
+        void insertItem(int key, ValueType value) {
+            int hashValue = hashFunction(key);
+            auto& cell = table[hashValue];
+            auto bItr = cell.begin();
+            bool keyExists = false;
+            for (; bItr != cell.end(); bItr++) {
+                if (bItr->first == key) {
+                    keyExists = true;
+                    bItr->second = value;
+                    ++itemsCount;
+                    cout << "WARNING: Key exists. Value replaced.\n";
+                    break;
+                }
+            }
+
+            if (!keyExists) {
+                cell.emplace_back(key, value);
+                ++itemsCount;
+            }
+
+            return;
+        }
+
+        void removeItem(size_t key) {
+            int hashValue = hashFunction(key);
+            auto& cell = table[hashValue];
+            auto bItr = cell.begin();
+            bool keyExists = false;
+            for (; bItr != cell.end(); bItr++) {
+                if (bItr->first == key) {
+                    keyExists = true;
+                    bItr = cell.erase(bItr); // Сдвигает итератор вперед
+                    --itemsCount;
+                    cout << "INFO: Item removed.\n";
+                    break;
+                }
+            }
+
+            if (!keyExists) {
+                cout << "WARNING: Key not found. Pair not removed.\n";
+            }
+
+            return;
+        }
+
+        ValueType searchTable(size_t key) const {
+            int hashValue = hashFunction(key);
+            auto& cell = table[hashValue];
+            auto bItr = cell.begin();
+            bool keyExists = false;
+            ValueType value;
+
+            for (; bItr != cell.end(); bItr++) {
+                if (bItr->first == key) {
+                    keyExists = true;
+                    value = bItr->second;
+                }
+            }
+
+            if (!keyExists) {
+                throw "[KeyError]: Key does not exists!";
+            }
+            else {
+                return value;
+            } 
+        }
+
+        void printTable() const {
+            for (int i{}; i < hashGroups; ++i) {
+                    if (table[i].size() == 0) continue;
+
+                auto bItr = table[i].begin();
+                for (; bItr != table[i].end(); bItr++) {
+                    cout << "Key: " << bItr->first << " ---> Value: " << bItr->second << "\n";
+                }
+            }
+            return;
+        }
+
+
+        class Iterator {
+        private:
+            const HashTable *table;
+            size_t groupIndex;
+            typename list<pair<size_t, ValueType>>::const_iterator listIter;
+        
+        public:
+            Iterator(const HashTable *table, bool isBegin) : table(table) {
+                if (isBegin) {
+                    groupIndex = 0;
+                    
+                    // В поисках первой непустой группы
+                    while (groupIndex < table->hashGroups && table->table[groupIndex].empty()) {
+                        groupIndex++;
+                    }
+                    
+                    if (groupIndex < table->hashGroups) {
+                        listIter = table->table[groupIndex].begin();
+                    }
+                    else {
+                        listIter = table->table[groupIndex].end();
+                    }
+                }
+                else {
+                    groupIndex = table->hashGroups;
+                    listIter = table->table[table->hashGroups - 1].end(); // конец таблицы
+                }
+            }
+
+            const pair<size_t, ValueType>& operator*() const { return *listIter; }
+
+            Iterator &operator++() {
+                if (groupIndex >= table->hashGroups) {
+                    return *this; // Достигли конца таблицы
+                }
+
+                ++listIter;
+
+            
+                if (listIter == table->table[groupIndex].end()) { // Достигли конца текущего списка
+                    ++groupIndex;
+                    while (groupIndex < table->hashGroups && table->table[groupIndex].empty()) {
+                        ++groupIndex; // Пропуск пусчтых таблиц
+                    }
+
+                    if (groupIndex < table->hashGroups) {
+                        listIter = table->table[groupIndex].begin();
+                    }
+                }
+                return *this;
+
+            }
+
+            bool operator!=(const Iterator &other) const {
+                return groupIndex != other.groupIndex || listIter != other.listIter;
+            }
+        };
+
+
+        Iterator begin() const {
+            return Iterator(this, true);
+        }
+
+        Iterator end() const {
+            return Iterator(this, false);
+        }
+
 };
-
-bool HashTable::isEmpty() const {
-    int sum{};
-    for (int i{}; i < hashGroups; i++) {
-        sum += table[i].size();
-    }
-
-    if (!sum) {
-        return true;
-    }
-    return false;
-}
-
-int HashTable::hashFunction(int key) {
-    return key % hashGroups;
-}
-
-void HashTable::insertItem(int key, string value) {
-    int hashValue = hashFunction(key);
-    auto& cell = table[hashValue];
-    auto bItr = begin(cell);
-    bool keyExists = false;
-    for (; bItr != end(cell); bItr++) {
-        if (bItr->first == key) {
-            keyExists = true;
-            bItr->second = value;
-            cout << "WARNING: Key exists. Value replaced.\n";
-            break;
-        }
-    }
-
-    if (!keyExists) {
-        cell.emplace_back(key, value);
-    }
-
-    return;
-}
-
-void HashTable::removeItem(int key) {
-    int hashValue = hashFunction(key);
-    auto& cell = table[hashValue];
-    auto bItr = begin(cell);
-    bool keyExists = false;
-    for (; bItr != end(cell); bItr++) {
-        if (bItr->first == key) {
-            keyExists = true;
-            bItr = cell.erase(bItr); // Сдвигает итератор вперед
-            cout << "INFO: Item removed.\n";
-            break;
-        }
-    }
-
-    if (!keyExists) {
-        cout << "WARNING: Key not found. Pair not removed.\n";
-    }
-
-    return;
-}
-
-string HashTable::searchTable(int key) const {
-    int hashValue = hashFunction(key);
-    auto& cell = table[hashValue];
-    auto bItr = begin(cell);
-    bool keyExists = false;
-
-    for (; bItr != end(cell); bItr++) {
-        if (bItr->first == key) {
-            keyExists = true;
-            return bItr->second;
-        }
-    }
-
-    if (!keyExists) {
-        return ""
-    }
-}
-
-void HashTable::printTable() const {
-    for (int i{}; i < hashGroups; ++i) {
-            if (table[i].size() == 0) continue;
-
-        auto bItr = table[i].begin();
-        for (; bItr != table[i].end(); bItr++) {
-            cout << "Key: " << bItr->first << " ---> Value: " << bItr->second << "\n";
-        }
-    }
-    return;
-}
-
-
 
 #endif
