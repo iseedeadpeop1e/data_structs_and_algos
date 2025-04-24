@@ -19,7 +19,7 @@ private:
 
 public:
     // Конструктор
-    MyQueue(size_t size) : capacity(size), front_inx(0), back_inx(0), items_count(0)
+    MyQueue(size_t size) : capacity(size), front_inx(1), back_inx(0), items_count(0)
     {
         container = new T[size];
     }
@@ -57,11 +57,19 @@ public:
 
     T front() const
     {
+        if (items_count == 0)
+        {
+            throw overflow_error("Queue is empty.");
+        }
         return container[front_inx];
     }
 
     T back() const
     {
+        if (items_count == 0)
+        {
+            throw overflow_error("Queue is empty.");
+        }
         return container[back_inx];
     }
 
